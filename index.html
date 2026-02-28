@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Violence Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .webcam-section {
+            text-align: center;
+        }
+
+        #webcamFeed {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 15px;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        }
+
+        .upload-section {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.violence {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+
+        .result.safe {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+        }
+
+        .alarm-indicator {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+            z-index: 1000;
+        }
+
+        .alarm-indicator.show {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="alarm-indicator" id="alarmIndicator">
+        🚨 VIOLENCE DETECTED! 🚨
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Violence Detection System</h1>
+            <p>AI-Powered Real-Time Detection with CNN + CBAM</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('webcam')">📹 Live Webcam</button>
+            <button class="tab" onclick="switchTab('upload')">📁 Upload Video</button>
+        </div>
+
+        <!-- Webcam Tab -->
+        <div id="webcamTab" class="tab-content active">
+            <div class="webcam-section">
+                <h2>Live Webcam Detection</h2>
+                <p>Real-time violence detection with alarm</p>
+                
+                <img id="webcamFeed" src="" alt="Webcam Feed" style="display:none;">
+                
+                <div>
+                    <button class="btn" onclick="startWebcam()">Start Detection</button>
+                    <button class="btn btn-danger" onclick="stopWebcam()">Stop Detection</button>
+                </div>
+                
+                <div id="webcamStatus" style="margin-top: 20px; font-size: 1.2em;"></div>
+            </div>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="uploadTab" class="tab-content">
+            <div class="upload-section">
+                <h2>Upload Video for Analysis</h2>
+                <input type="file" id="videoInput" accept="video/*" style="display:none;">
+                <button class="btn" onclick="document.getElementById('videoInput').click()">
+                    Choose Video
+                </button>
+                <div id="selectedFile" style="margin-top: 20px;"></div>
+                <button class="btn" id="analyzeBtn" onclick="analyzeVideo()" style="display:none;">
+                    Analyze Video
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing video...</p>
+            </div>
+
+            <div class="result" id="result">
+                <div id="resultIcon" style="font-size: 4em;"></div>
+                <div id="resultText" style="font-size: 2em; font-weight: bold; margin: 20px 0;"></div>
+                <div id="confidence" style="font-size: 1.3em;"></div>
+                <button class="btn" onclick="resetAnalysis()" style="margin-top: 20px;">
+                    Analyze Another Video
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alarm Audio -->
+    <audio id="alarmSound" loop>
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSh+zPDajzsKElyx6OyrWBQLSKHf8sFuIwUug8/y2Ik2CBhku+zooVARC0yl4fG5ZRwFNo3V8859LwUofsz" type="audio/wav">
+    </audio>
+
+    <script>
+        let webcamActive = false;
+        let alarmPlaying = false;
+        const alarmSound = document.getElementById('alarmSound');
+        const alarmIndicator = document.getElementById('alarmIndicator');
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'webcam') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('webcamTab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('uploadTab').classList.add('active');
+                stopWebcam();
+            }
+        }
+
+        async function startWebcam() {
+            try {
+                const response = await fetch('/start_webcam', { method: 'POST' });
+                if (response.ok) {
+                    webcamActive = true;
+                    document.getElementById('webcamFeed').src = '/webcam_feed';
+                    document.getElementById('webcamFeed').style.display = 'block';
+                    document.getElementById('webcamStatus').innerHTML = 
+                        '<span style="color: green;">✓ Detection Active</span>';
+                    
+                    checkViolence();
+                }
+            } catch (error) {
+                alert('Error starting webcam: ' + error.message);
+            }
+        }
+
+        async function stopWebcam() {
+            try {
+                const response = await fetch('/stop_webcam', { method: 'POST' });
+                if (response.ok) {
+                    webcamActive = false;
+                    document.getElementById('webcamFeed').style.display = 'none';
+                    document.getElementById('webcamStatus').innerHTML = 
+                        '<span style="color: gray;">Detection Stopped</span>';
+                    stopAlarm();
+                }
+            } catch (error) {
+                console.error('Error stopping webcam:', error);
+            }
+        }
+
+        async function checkViolence() {
+            if (!webcamActive) return;
+            
+            try {
+                const response = await fetch('/check_violence');
+                const data = await response.json();
+                
+                if (data.violence_detected) {
+                    playAlarm();
+                } else {
+                    stopAlarm();
+                }
+            } catch (error) {
+                console.error('Error checking violence:', error);
+            }
+            
+            if (webcamActive) {
+                setTimeout(checkViolence, 1000);
+            }
+        }
+
+        function playAlarm() {
+            if (!alarmPlaying) {
+                alarmSound.play().catch(e => console.log('Alarm play failed:', e));
+                alarmIndicator.classList.add('show');
+                alarmPlaying = true;
+            }
+        }
+
+        function stopAlarm() {
+            if (alarmPlaying) {
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
+                alarmIndicator.classList.remove('show');
+                alarmPlaying = false;
+            }
+        }
+
+        // Video Upload Functions
+        document.getElementById('videoInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                document.getElementById('selectedFile').innerHTML = 
+                    `<strong>Selected:</strong> ${file.name}`;
+                document.getElementById('analyzeBtn').style.display = 'inline-block';
+            }
+        });
+
+        async function analyzeVideo() {
+            const fileInput = document.getElementById('videoInput');
+            if (!fileInput.files.length) {
+                alert('Please select a video file');
+                return;
+            }
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('result').classList.remove('show');
+
+            const formData = new FormData();
+            formData.append('video', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/predict_video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+
+                if (response.ok) {
+                    showResult(data);
+                    if (data.is_violence) {
+                        playAlarm();
+                        setTimeout(stopAlarm, 5000);
+                    }
+                } else {
+                    alert('Error: ' + (data.error || 'Analysis failed'));
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        function showResult(data) {
+            const result = document.getElementById('result');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultText = document.getElementById('resultText');
+            const confidence = document.getElementById('confidence');
+
+            if (data.is_violence) {
+                result.className = 'result violence show';
+                resultIcon.textContent = '⚠️';
+                resultText.textContent = 'VIOLENCE DETECTED';
+            } else {
+                result.className = 'result safe show';
+                resultIcon.textContent = '✅';
+                resultText.textContent = 'NO VIOLENCE DETECTED';
+            }
+
+            // Show detailed probabilities
+            const violenceProb = (data.violence_probability * 100).toFixed(1);
+            const nonviolenceProb = (data.nonviolence_probability * 100).toFixed(1);
+            const violenceFrames = data.violence_frames || 0;
+            const totalFrames = data.total_frames || 0;
+            
+            confidence.innerHTML = `
+                <div style="margin: 10px 0;">
+                    <strong>Violence:</strong> ${violenceProb}% | 
+                    <strong>Non-Violence:</strong> ${nonviolenceProb}%
+                </div>
+                <div style="font-size: 0.9em; color: #666;">
+                    Frames: ${violenceFrames}/${totalFrames} detected violence
+                </div>
+                <div style="font-size: 0.9em; color: #666;">
+                    Confidence: ${data.confidence_percent}
+                </div>
+            `;
+        }
+
+        function resetAnalysis() {
+            document.getElementById('videoInput').value = '';
+            document.getElementById('selectedFile').innerHTML = '';
+            document.getElementById('analyzeBtn').style.display = 'none';
+            document.getElementById('result').classList.remove('show');
+            stopAlarm();
+        }
+    </script>
+</body>
+</html>
