@@ -51,17 +51,7 @@ The proposed model achieves the best performance with **95% accuracy**.
 ## 🔄 Workflow
 
 
-Video / Webcam
-      ↓
-Frame Extraction
-      ↓
-Preprocessing
-      ↓
-CNN + CBAM
-      ↓
-Violence Detection
-      ↓
-Visual + Audio Alert
+Video / Webcam --> Frame Extraction --> Preprocessing --> CNN + CBAM --> Violence Detection --> Visual + Audio Alert
 
 ## 🔮 Future Scope
 
